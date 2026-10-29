@@ -1,25 +1,36 @@
-# Ország-Város – családi webes játék
+# 🌍 Ország-Város
 
-Csak Node.js kell (18+), külső csomag és adatbázis nincs. Az állás a memóriában van.
+Családi, többjátékos Ország-Város böngészőben – telefonon, tableten, laptopon és TV-n.
+Helyi hálózatra készült. Csak Node.js 18+ kell, külső csomag és adatbázis nincs.
 
-## Proxmox LXC (Debian)
-    apt install -y nodejs
-    cd /opt && sh setup.sh
-    cp /opt/orszag-varos/orszagvaros.service /etc/systemd/system/
-    systemctl daemon-reload && systemctl enable --now orszagvaros
-Játékosok: http://IP/   ·   TV: http://IP/tv
-Frissítés: új setup.sh lefuttatása /opt-ban, majd: systemctl restart orszagvaros
+## Funkciók
+- Belépés névvel, közös link
+- Véletlenszerű betűsorsoló, pörgő ABC + STOP (Q/W/X/Y és a már kihúzott betűk "kerekítve")
+- Oszlopok: Ország, Város, Fiú, Lány, Növény, Állat, Tárgy
+- „Kész” gomb; kör vége: mindenki kész / többség kész / első kész + ráadásidő
+- Opcionális időkorlát
+- Kiértékelés: azonos és rossz betűs szavak előre kihúzva, kihúzás a szó gazdájának jóváhagyásával, 1 pont / ki nem húzott szó
+- Végtelen vagy beállítható körszám, „Játék vége” bármikor
+- TV / eredményjelző nézet: `/tv`
+- Főképernyőre tehető (PWA)
 
-## NAS / Docker
-docker-compose.yml (volume útvonal igazítása) → http://IP:3000/
+## Telepítés Debian/Ubuntu LXC-be (root)
+```bash
+apt update && apt install -y curl
+curl -fsSL https://raw.githubusercontent.com/tomee1114/orszag_varos/main/install.sh | bash -s v2.0.0
+```
+Frissítés vagy visszaállás másik verzióra:
+```bash
+bash /opt/orszag-varos/install.sh v2.1.0
+```
+Más port: `PORT=8080 bash /opt/orszag-varos/install.sh v2.0.0`
 
-## Telefonon "appként"
-Safari: Megosztás → Főképernyőhöz adás.  Chrome/Android: ⋮ → Hozzáadás a kezdőképernyőhöz.
-Teljes képernyős, saját ikonnal indul.
+## Docker
+```bash
+docker build -t orszag-varos . && docker run -d -p 3000:3000 --restart unless-stopped orszag-varos
+```
 
-## Beállítások (☰ menü, játék közben is)
-- Körök száma: végtelen / 3–20
-- Betűk: egyszerű ABC vagy teljes magyar ábécé
-- Időkorlát: nincs / 1–5 perc (a következő körtől)
-- Kör vége: mindenki kész / több mint a fele kész / az első kész
-- Ráadásidő: ennyi ideje marad a többieknek, ha a szabály lezárja a kört
+## Kézi indítás
+```bash
+node server.js          # http://IP:3000/
+```
