@@ -1,0 +1,1 @@
+<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ország-Város TV</title><link rel="stylesheet" href="style.css"></head><body class="tv"><div id="tv"></div><script src="qrcode-lite.js"></script><script src="tv.js"></script></body></html>
