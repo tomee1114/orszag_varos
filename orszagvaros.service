@@ -1,0 +1,14 @@
+[Unit]
+Description=Orszag-Varos jatek
+After=network-online.target
+
+[Service]
+WorkingDirectory=/opt/orszag-varos
+ExecStart=/usr/bin/node server.js
+Environment=PORT=80
+DynamicUser=yes
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
