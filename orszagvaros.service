@@ -1,5 +1,5 @@
 [Unit]
-Description=Orszag-Varos v2.2.0
+Description=Orszag-Varos v2.2.1
 After=network-online.target
 [Service]
 WorkingDirectory=/opt/orszag-varos
