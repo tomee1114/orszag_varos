@@ -1,122 +1,15 @@
-/* Ország-Város – TV / eredményjelző nézet (csak megjelenít, nem játszik) */
-let S = null;
-let key = '';
-const root = document.getElementById('tv');
-const spinner = new Spinner(paint);
-
-function nameOf(id) { const p = S.players.find(x => x.id === id); return p ? p.name : '?'; }
-
-function connect() {
-  const es = new EventSource('events?tv=1');
-  es.onmessage = e => { S = JSON.parse(e.data); syncClock(S); render(); };
-  es.onopen = () => document.body.classList.remove('offline');
-  es.onerror = () => document.body.classList.add('offline');
-}
-
-function render() {
-  if (!key) { root.innerHTML = '<aside id="score"></aside><section id="stage"></section>'; key = 'shell'; }
-  setHtml(document.getElementById('score'), scoreHtml());
-  const st = document.getElementById('stage');
-  const k = S.phase + '-' + S.round;
-  if (S.phase === 'drawing') {
-    if (st.dataset.k !== k) {
-      st.dataset.k = k; st.__html = null;
-      st.innerHTML = `<div class="tv-round">${S.round}. kör</div><div class="tv-info" id="tvinfo"></div>
-        <div class="spinbox tvspin"><div class="sp side" id="sp-prev"></div><div class="sp main" id="sp-cur">?</div><div class="sp side" id="sp-next"></div></div>
-        <div class="tv-rules">${rulesText(S)}</div><div id="tvlast"></div>`;
-      spinner.start(S.alphabet.length);
-    }
-    if (spinner.len !== S.alphabet.length) spinner.start(S.alphabet.length);
-    setHtml(document.getElementById('tvinfo'), `🎲 <b>${esc(nameOf(S.drawerId))}</b> sorsolja a betűt…`);
-    const last = S.history[S.history.length - 1];
-    setHtml(document.getElementById('tvlast'), last ? `<h3>Előző kör (${esc(last.letter)})</h3>` + roundTable(last.rows, S.cats, true) : '');
-    return;
-  }
-  spinner.stop();
-  st.dataset.k = k;
-  let html = '';
-  if (S.phase === 'lobby') html = lobbyHtml();
-  else if (S.phase === 'writing') html = writingHtml();
-  else if (S.phase === 'review') html = reviewHtml();
-  else if (S.phase === 'final') html = finalHtml();
-  setHtml(st, html);
-  tvTick();
-}
-function tvTick() {
-  const el = document.getElementById('tvtimer');
-  if (el && S && S.phase === 'writing') setHtml(el, timerHtml(S));
-}
-setInterval(tvTick, 200);
-
-function paint(i) {
-  const cur = document.getElementById('sp-cur');
-  if (!cur) return;
-  const pool = ['A','CS','É','GY','K','NY','Ó','P','SZ','TY','Ü','ZS','✦','?','●','◆'];
-  const pick = () => pool[Math.floor(Math.random() * pool.length)];
-  const set = (el, v) => { el.textContent = v; el.classList.remove('bad', 'used'); };
-  set(cur, pick()); set(document.getElementById('sp-prev'), pick()); set(document.getElementById('sp-next'), pick());
-  const box = document.querySelector('.spinbox');
-  if (box) box.dataset.fx = String(Math.floor(i / 7) % 3);
-}
-
-function scoreHtml() {
-  const ranked = [...S.players].sort((a, b) => (b.score + (b.roundPts || 0)) - (a.score + (a.roundPts || 0)));
-  const rows = ranked.map(p => {
-    let status = '';
-    if (S.phase === 'writing') status = p.done ? '✅' : `✏️ ${p.filled}/${S.cats.length}`;
-    if (S.phase === 'review') status = `+${p.roundPts}`;
-    return `<li class="${p.online ? '' : 'off'}"><span class="nm">${esc(p.name)}</span><span class="stt">${status}</span><b>${p.score}</b></li>`;
-  }).join('');
-  const r = S.round ? `${S.round}. kör${S.maxRounds ? ' / ' + S.maxRounds : ''}` : '';
-  return `<h2>🏆 Állás</h2><div class="muted">${r}</div><ul class="tvscore">${rows || '<li class="muted">Még senki sincs bent</li>'}</ul>`;
-}
-
-function lobbyHtml() {
-  const url = location.origin + location.pathname.replace(/tv(\.html)?$/, '');
-  return `<div class="tv-title">🌍 Ország-Város 🏙️</div>
-    <div class="tv-join">Csatlakozás telefonról / tabletről:<div class="url big">${esc(url)}</div></div>
-    <div class="tv-players">${S.players.map(p => `<span class="chip big">${esc(p.name)}</span>`).join('') || '<span class="muted">Várjuk a játékosokat…</span>'}</div>
-    <div class="tv-rules">${rulesText(S)}</div>`;
-}
-
-function writingHtml() {
-  const bars = S.players.map(p => {
-    const pct = Math.round(p.filled / S.cats.length * 100);
-    return `<div class="bar ${p.done ? 'done' : ''}"><span class="bn">${esc(p.name)}</span>
-      <span class="bt"><span style="width:${pct}%"></span></span><span class="bs">${p.done ? '✅ Kész' : p.filled + '/' + S.cats.length}</span></div>`;
-  }).join('');
-  return `<div class="tv-letter-wrap"><div class="big-letter tvbig pop${bigCls(S.letter)}">${esc(S.letter)}</div>
-    <div class="tv-info">${S.round}. kör · sorsolta: <b>${esc(nameOf(S.drawerId))}</b></div>
-    <div id="tvtimer" class="tvtimer"></div></div>
-    <div class="bars">${bars}</div>`;
-}
-
-function reviewHtml() {
-  const rows = S.players.map(p => ({ id: p.id, name: p.name, answers: S.answers[p.id] || {}, marks: S.marks[p.id] || {}, pts: p.roundPts }));
-  return `<div class="tv-round">${S.round}. kör – <span class="big-letter sm${bigCls(S.letter)}">${esc(S.letter)}</span> – kiértékelés</div>` + roundTable(rows, S.cats, false);
-}
-
-function roundTable(rows, cats, compact) {
-  const head = cats.map(c => `<th>${c.icon} ${esc(c.label)}</th>`).join('');
-  const body = rows.map(r => `<tr><th class="pn">${esc(r.name)}</th>${cats.map(c => {
-    const t = String(r.answers[c.key] || '').trim();
-    if (!t) return '<td class="empty">—</td>';
-    const m = r.marks[c.key] || {};
-    const cls = m.s === 'x' ? 'st-x' : m.s === 'pending' ? 'st-pending' : 'st-ok';
-    return `<td class="${cls}">${esc(t)}${m.s === 'pending' ? ' <small>❓</small>' : ''}${m.s === 'x' && m.r === 'dup' ? ' <small>(=)</small>' : ''}</td>`;
-  }).join('')}<td class="pts">+${r.pts}</td></tr>`).join('');
-  return `<div class="tablewrap"><table class="tvtable ${compact ? 'compact' : ''}"><thead><tr><th></th>${head}<th>Pont</th></tr></thead><tbody>${body}</tbody></table></div>`;
-}
-
-function finalHtml() {
-  const ranked = [...S.players].sort((a, b) => b.score - a.score);
-  const medals = ['🥇', '🥈', '🥉'];
-  let rank = 0, prev = null;
-  const rows = ranked.map((p, i) => {
-    if (p.score !== prev) { rank = i; prev = p.score; }
-    return `<div class="rank r${rank + 1}"><span class="medal">${medals[rank] || (rank + 1) + '.'}</span><span class="rn">${esc(p.name)}</span><b>${p.score} pont</b></div>`;
-  }).join('');
-  return `<div class="tv-title">🏆 Eredményhirdetés</div><div class="tv-info">${S.history.length} kör után</div><div class="ranks tvranks">${rows}</div>`;
-}
-
-connect();
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));let S=null,last='',spin=null,offset=0;new EventSource('events?tv=1').onmessage=e=>{S=JSON.parse(e.data);offset=S.now-Date.now();render()};
+function render(){let k=S.phase+'-'+S.round;if(k===last&&S.phase!=='writing')return;last=k;clearInterval(spin);document.body.classList.toggle('reduced',S.reduced);let a=[...S.players].sort((x,y)=>y.score-x.score),side=`<aside><h2>🏆 Állás</h2><p>${S.round?S.round+'. kör':''}</p>${a.map((p,i)=>`<div class="score" style="--c:${i}"><b>${esc(p.name)}</b><span>${p.score}</span></div>`).join('')}</aside>`,main='';
+if(S.phase==='lobby')main=`<main class="tv-lobby"><h1>🌍 Ország-Város</h1><p>Csatlakozás:</p><code>${esc(location.origin+'/')}</code><div>${S.players.map(p=>`<span>${esc(p.name)}</span>`).join('')}</div></main>`;
+if(S.phase==='drawing')main=`<main class="tv-draw"><h2>${esc(S.players.find(p=>p.id===S.drawer)?.name)} sorsol…</h2><div class="spinner"><i>✦</i><strong>?</strong><i>◆</i></div><p>Az eredmény csak a STOP után derül ki</p></main>`;
+if(S.phase==='writing')main=writing();
+if(S.phase==='review')main=review();
+if(S.phase==='roundshow')main=roundshow();
+if(S.phase==='final')main=final();
+$('#tv').innerHTML=side+main;if(S.phase==='drawing')startSpin();if(S.phase==='writing')tick()}
+function startSpin(){let pool=['A','CS','É','GY','K','NY','Ó','P','SZ','TY','Ü','ZS','✦','?','●','◆'];spin=setInterval(()=>{document.querySelectorAll('.spinner>*').forEach(x=>x.textContent=pool[Math.floor(Math.random()*pool.length)]);$('.spinner').dataset.fx=Math.floor(Math.random()*3)},80)}
+function writing(){return`<main class="tv-write"><div class="heroletter">${esc(S.label)}</div><div id="tvtimer"></div><div class="progresses">${S.players.map((p,i)=>`<div class="progress ${p.done?'done':''}" style="--i:${i};--pct:${p.filled/7*100}%"><div class="pname"><b>${esc(p.name)}</b><span>${p.done?'✅ Kész':p.filled+'/7'}</span></div><div class="track"><i></i><u></u></div><div class="icons">${S.cats.map((c,j)=>`<span class="${j<p.filled?'lit':''}">${c.icon}</span>`).join('')}</div></div>`).join('')}</div></main>`}
+function tick(){if(!S||S.phase!=='writing')return;let e=$('#tvtimer');if(!e)return;if(!S.endsAt){e.innerHTML='';return}let sec=Math.max(0,Math.ceil((S.endsAt-(Date.now()+offset))/1000));e.innerHTML=`<div class="tvtimer ${sec<=10?'urgent':''}">${S.endReason==='rule'?'A szabály aktiválódott!':'Hátralévő idő'} <b>${sec}</b></div>`}setInterval(tick,250)
+function review(){return`<main class="tv-review"><h1>${S.round}. kör · ${esc(S.label)}</h1><div class="reviewgrid"><div></div>${S.cats.map(c=>`<b>${c.icon}<small>${c.label}</small></b>`).join('')}${S.players.map(p=>`<h3>${esc(p.name)}</h3>${S.cats.map(c=>{let w=S.answers[p.id]?.[c.key],m=S.marks[p.id]?.[c.key];return`<div class="cell ${m?.s||''}">${esc(w||'—')}</div>`}).join('')}`).join('')}</div></main>`}
+function roundshow(){let rows=[...S.show.rows].sort((a,b)=>b.pts-a.pts),max=Math.max(...rows.map(x=>x.pts),1);return`<main class="tv-roundshow"><div class="burst">✨</div><h1>${S.round}. kör eredménye</h1><h2>${esc(S.label)}</h2>${rows.map((r,i)=>`<div class="roundrow" style="--i:${i};--w:${r.pts/max*100}%"><span>${i===0?'🏅':'⭐'}</span><b>${esc(r.name)}</b><div><i></i></div><em>+${r.pts}</em><u>${'🪙'.repeat(r.pts)}</u></div>`).join('')}</main>`}
+function final(){let a=[...S.players].sort((x,y)=>y.score-x.score),st=S.stats||{},pp=st.players||[],best=[...pp].sort((x,y)=>y.good-x.good)[0],fast=[...pp].sort((x,y)=>y.fast-x.fast)[0],perfect=[...pp].sort((x,y)=>y.perfect-x.perfect)[0];return`<main class="tv-final"><div class="confetti">${'<i></i>'.repeat(70)}</div><h1>🏆 Eredményhirdetés</h1><div class="tvpodium">${a.map((p,i)=>`<div class="tvplace p${i+1}" style="--i:${i}"><span>${['🥇','🥈','🥉'][i]||i+1+'.'}</span><b>${esc(p.name)}</b><em>${p.score} pont</em></div>`).join('')}</div><div class="awards">${best?`<article>🧠<b>Szókirály</b><span>${esc(best.name)} · ${best.good}</span></article>`:''}${fast?`<article>⚡<b>Villámkéz</b><span>${esc(fast.name)} · ${fast.fast}</span></article>`:''}${perfect?.perfect?`<article>🌟<b>Tökéletes kör</b><span>${esc(perfect.name)} · ${perfect.perfect}</span></article>`:''}${st.longest?`<article>📏<b>Leghosszabb szó</b><span>${esc(st.longest)}</span></article>`:''}</div></main>`}

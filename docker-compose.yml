@@ -2,8 +2,5 @@ services:
   orszag-varos:
     build: .
     container_name: orszag-varos
-    environment:
-      - PORT=3000
-    ports:
-      - "3000:3000"
+    ports: ["3000:3000"]
     restart: unless-stopped
