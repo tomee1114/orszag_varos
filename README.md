@@ -6,6 +6,8 @@ Helyi hálózatra készült. Csak Node.js 18+ kell, külső csomag és adatbázi
 ## Funkciók
 - Belépés névvel, közös link
 - Véletlenszerű betűsorsoló, pörgő ABC + STOP (Q/W/X/Y és a már kihúzott betűk "kerekítve")
+- Teljes magyar ábécé **betűpárokkal**: bármelyik tagjánál áll meg, a pár minden tagja jó
+  (A/Á, C/CS, D/DZ/DZS, E/É, G/GY, I/Í, L/LY, N/NY, O/Ó, Ö/Ő, S/SZ, T/TY, U/Ú, Ü/Ű, Z/ZS)
 - Oszlopok: Ország, Város, Fiú, Lány, Növény, Állat, Tárgy
 - „Kész” gomb; kör vége: mindenki kész / többség kész / első kész + ráadásidő
 - Opcionális időkorlát
@@ -17,20 +19,19 @@ Helyi hálózatra készült. Csak Node.js 18+ kell, külső csomag és adatbázi
 ## Telepítés Debian/Ubuntu LXC-be (root)
 ```bash
 apt update && apt install -y curl
-curl -fsSL https://raw.githubusercontent.com/tomee1114/orszag_varos/main/install.sh | bash -s v2.0.0
+curl -fsSL https://raw.githubusercontent.com/tomee1114/orszag_varos/main/install.sh | bash -s v2.1.0
 ```
 Frissítés vagy visszaállás másik verzióra:
 ```bash
 bash /opt/orszag-varos/install.sh v2.1.0
 ```
-Más port: `PORT=8080 bash /opt/orszag-varos/install.sh v2.0.0`
+Más port: `PORT=8080 bash /opt/orszag-varos/install.sh v2.1.0`
 
 ## Docker
 ```bash
-docker build -t orszag-varos . && docker run -d -p 3000:3000 --restart unless-stopped orszag-varos
+docker compose up -d --build      # http://IP:3000/
 ```
 
-## Kézi indítás
-```bash
-node server.js          # http://IP:3000/
-```
+## Változások
+- **v2.1.0** – teljes magyar ábécé az alapértelmezett, betűpárokkal (T/TY, S/SZ, …)
+- **v2.0.0** – időkorlát, „kör vége ha…” szabály + ráadásidő, PWA

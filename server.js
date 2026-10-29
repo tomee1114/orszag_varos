@@ -29,6 +29,11 @@ const ALPHABETS = {
   simple: 'A B C D E F G H I J K L M N O P Q R S T U V W X Y Z'.split(' '),
   full: 'A Á B C CS D DZ DZS E É F G GY H I Í J K L LY M N NY O Ó Ö Ő P Q R S SZ T TY U Ú Ü Ű V W X Y Z ZS'.split(' '),
 };
+/* Teljes ábécénél ezek a betűk párban járnak: bármelyiknél áll meg, mindegyik használható */
+const PAIRS = [
+  ['A', 'Á'], ['C', 'CS'], ['D', 'DZ', 'DZS'], ['E', 'É'], ['G', 'GY'], ['I', 'Í'], ['L', 'LY'],
+  ['N', 'NY'], ['O', 'Ó'], ['Ö', 'Ő'], ['S', 'SZ'], ['T', 'TY'], ['U', 'Ú'], ['Ü', 'Ű'], ['Z', 'ZS'],
+];
 const INVALID = new Set(['Q', 'W', 'X', 'Y']); // ezekkel nem kezdődik magyar szó
 const END_RULES = ['all', 'half', 'first'];
 
@@ -42,15 +47,16 @@ function newGameState(prev) {
     phase: 'lobby', // lobby | drawing | writing | review | final
     round: 0,
     maxRounds: prev ? prev.maxRounds : 0,       // 0 = végtelen
-    alphabetMode: prev ? prev.alphabetMode : 'simple',
+    alphabetMode: prev ? prev.alphabetMode : 'full',
     timeLimit: prev ? prev.timeLimit : 0,       // mp, 0 = nincs időkorlát
     endRule: prev ? prev.endRule : 'all',       // all | half | first
     grace: prev ? prev.grace : 10,              // ráadásidő mp, ha a szabály zárja a kört
     endsAt: null,
     endReason: null,                            // time | rule
     usedLetters: [],
-    letter: null,
-    rawLetter: null,
+    letter: null,    // kijelzett felirat, pl. "T / TY"
+    letters: [],     // elfogadott kezdőbetűk, pl. ["T","TY"]
+    rawLetter: null, // ahol a pörgetés megállt
     drawerId: null,
     lastDrawerId: null,
     marks: {},   // marks[playerId][cat] = { s: 'ok'|'x'|'pending', r, by, byName }
@@ -64,19 +70,42 @@ function norm(s) {
 }
 function alphabet() { return ALPHABETS[g.alphabetMode] || ALPHABETS.simple; }
 function fail(msg) { const e = new Error(msg); e.user = true; throw e; }
+function groupOf(l) {
+  return PAIRS.find(p => p.includes(l)) || [l];
+}
 
-function startsOk(text, letter, mode) {
-  const t = String(text || '').trim().toLowerCase();
-  if (!t || !letter) return false;
-  if (mode !== 'full') return norm(t).startsWith(norm(letter));
+/* A STOP pillanata nem határozza meg a betűt: a szerver titkos, egyenletes sorsolást végez
+   a még nem használt betűcsoportok között. Így nem lehet az animáció alapján P-re időzíteni. */
+function pickRandomGroup() {
+  const groups = [];
+  const seen = new Set();
+  for (const l of ALPHABETS.full) {
+    if (INVALID.has(l)) continue;
+    const grp = groupOf(l);
+    const key = grp.join('|');
+    if (!seen.has(key)) { seen.add(key); groups.push(grp); }
+  }
+  let available = groups.filter(grp => !grp.some(l => g.usedLetters.includes(l)));
+  if (!available.length) { g.usedLetters = []; available = groups; }
+  return available[Math.floor(Math.random() * available.length)];
+}
+
+
+/* pontos kezdőbetű a teljes ábécében: pl. C betűnél a "Csepel" nem C, hanem CS */
+function startsExact(t, letter) {
   const L = letter.toLowerCase();
   if (!t.startsWith(L)) return false;
-  // pl. C betűnél a "Csepel" nem jó, mert az CS
   for (const other of ALPHABETS.full) {
     const o = other.toLowerCase();
     if (o.length > L.length && o.startsWith(L) && t.startsWith(o)) return false;
   }
   return true;
+}
+function startsOk(text, letters, mode) {
+  const t = String(text || '').trim().toLowerCase();
+  if (!t || !letters || !letters.length) return false;
+  if (mode !== 'full') return letters.some(l => norm(t).startsWith(norm(l)));
+  return letters.some(l => startsExact(t, l));
 }
 
 function isOnline(id) {
@@ -89,22 +118,23 @@ function activePlayers() {
     isOnline(p.id) || (p.offlineSince && now - p.offlineSince < OFFLINE_GRACE_MS));
 }
 
-/* Betű "kerekítése": ha Q/W/X/Y-on vagy már kisorsolt betűn áll meg, a legközelebbi jót adja */
+/* Betű "kerekítése": ha Q/W/X/Y-on vagy már kisorsolt betűn (betűpáron) áll meg, a legközelebbi jót adja.
+   Visszatérés: a betűcsoport, pl. ["T","TY"] */
 function pickLetter(index) {
   const A = alphabet();
   let used = new Set(g.usedLetters);
-  const ok = l => !INVALID.has(l) && !used.has(l);
+  const ok = l => !INVALID.has(l) && !groupOf(l).some(x => used.has(x));
   if (!A.some(ok)) { g.usedLetters = []; used = new Set(); } // minden betű elfogyott -> újrakezdjük
-  if (ok(A[index])) return A[index];
+  if (ok(A[index])) return groupOf(A[index]);
   for (let d = 1; d < A.length; d++) {
     const c = [];
     const a = A[(index + d) % A.length];
     const b = A[(index - d + A.length) % A.length];
     if (ok(a)) c.push(a);
     if (ok(b) && b !== a) c.push(b);
-    if (c.length) return c[Math.floor(Math.random() * c.length)];
+    if (c.length) return groupOf(c[Math.floor(Math.random() * c.length)]);
   }
-  return A[0];
+  return groupOf(A[0]);
 }
 
 function pickDrawer() {
@@ -119,6 +149,7 @@ function startRound() {
   g.round++;
   g.phase = 'drawing';
   g.letter = null;
+  g.letters = [];
   g.rawLetter = null;
   g.endsAt = null;
   g.endReason = null;
@@ -143,7 +174,7 @@ function toReview() {
       const raw = String(p.answers[cat] || '').trim();
       if (!raw) continue;
       let m = { s: 'ok' };
-      if (!startsOk(raw, g.letter, g.alphabetMode)) m = { s: 'x', r: 'letter' };
+      if (!startsOk(raw, g.letters, g.alphabetMode)) m = { s: 'x', r: 'letter' };
       else if (groups.get(norm(raw)).length > 1) m = { s: 'x', r: 'dup' };
       (g.marks[p.id] = g.marks[p.id] || {})[cat] = m;
     }
@@ -246,12 +277,11 @@ function handle(msg) {
     case 'stopSpin': {
       if (g.phase !== 'drawing') fail('Most nem lehet sorsolni.');
       if (g.drawerId !== id) fail('Most nem te sorsolsz.');
-      const A = alphabet();
-      const idx = Number(msg.index);
-      if (!Number.isInteger(idx) || idx < 0 || idx >= A.length) fail('Hibás betű.');
-      g.rawLetter = A[idx];
-      g.letter = pickLetter(idx);
-      g.usedLetters.push(g.letter);
+      const grp = pickRandomGroup();
+      g.rawLetter = null;
+      g.letters = grp;
+      g.letter = grp.join(' / ');
+      g.usedLetters.push(...grp);
       g.lastDrawerId = id;
       g.phase = 'writing';
       g.endsAt = g.timeLimit ? Date.now() + g.timeLimit * 1000 : null;
@@ -345,6 +375,7 @@ function handle(msg) {
       }
       if (msg.alphabetMode !== undefined) {
         if (!ALPHABETS[msg.alphabetMode]) fail('Hibás betűkészlet.');
+        if (g.phase === 'writing' || g.phase === 'review') fail('A betűkészletet kör közben nem lehet váltani.');
         if (msg.alphabetMode !== g.alphabetMode) { g.alphabetMode = msg.alphabetMode; g.usedLetters = []; }
       }
       if (msg.timeLimit !== undefined) {
@@ -412,6 +443,7 @@ function view(forId, tv) {
     invalid: [...INVALID],
     usedLetters: g.usedLetters,
     letter: g.letter,
+    letters: g.letters,
     rawLetter: g.rawLetter,
     drawerId: g.drawerId,
     cats: CATS,

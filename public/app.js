@@ -125,7 +125,7 @@ function lobbyHtml() {
     <p class="muted center small">Bárki elindíthatja. Minden körben a gép választja ki, ki sorsolja a betűt.</p>`;
 }
 function settingsText() {
-  return `${S.maxRounds ? S.maxRounds + ' kör' : 'Végtelen kör (amíg kedvünk van)'} · ${S.alphabetMode === 'full' ? 'teljes magyar ábécé' : 'egyszerű ABC'}`;
+  return `${S.maxRounds ? S.maxRounds + ' kör' : 'Végtelen kör (amíg kedvünk van)'} · ${S.alphabetMode === 'full' ? 'teljes magyar ábécé, betűpárokkal (T/TY, S/SZ…)' : 'egyszerű ABC'}`;
 }
 
 /* --- betűsorsolás --- */
@@ -149,11 +149,12 @@ function buildDrawing(m) {
 function paintSpin(i) {
   const cur = document.getElementById('sp-cur');
   if (!cur || !S) return;
-  const Ab = S.alphabet, n = Ab.length;
-  const set = (el, l) => { el.textContent = l; el.classList.remove('bad', 'used'); const c = letterClass(S, l); if (c) el.classList.add(c); };
-  set(cur, Ab[i % n]);
-  set(document.getElementById('sp-prev'), Ab[(i - 1 + n) % n]);
-  set(document.getElementById('sp-next'), Ab[(i + 1) % n]);
+  const pool = ['A','CS','É','GY','K','NY','Ó','P','SZ','TY','Ü','ZS','✦','?','●','◆'];
+  const pick = () => pool[Math.floor(Math.random() * pool.length)];
+  const set = (el, v) => { el.textContent = v; el.classList.remove('bad', 'used'); };
+  set(cur, pick()); set(document.getElementById('sp-prev'), pick()); set(document.getElementById('sp-next'), pick());
+  const box = document.querySelector('.spinbox');
+  if (box) box.dataset.fx = String(Math.floor(i / 8) % 3);
 }
 function updateDrawing() {
   if (spinner.len !== S.alphabet.length && !stopping) spinner.start(S.alphabet.length);
@@ -166,15 +167,14 @@ function updateDrawing() {
     document.getElementById('drawact').innerHTML = amDrawer ? '<button class="btn huge stop" data-act="stop">✋ STOP</button>' : '';
     document.querySelector('.spinbox').classList.toggle('clickable', amDrawer);
   }
-  setHtml(document.getElementById('abc'),
-    S.alphabet.map(l => `<span class="${letterClass(S, l)}">${esc(l)}</span>`).join(''));
+  setHtml(document.getElementById('abc'), '<span class="mystery">✦ A betű eredménye csak a STOP után derül ki ✦</span>');
 }
 function doStop() {
   if (!S || S.phase !== 'drawing' || S.drawerId !== ID || stopping) return;
   stopping = true;
   spinner.stop();
   document.querySelector('.spinbox').classList.add('stopped');
-  A('stopSpin', { index: spinner.idx }).then(j => {
+  A('stopSpin').then(j => {
     if (j.error) { stopping = false; document.querySelector('.spinbox')?.classList.remove('stopped'); spinner.start(S.alphabet.length); }
   });
 }
@@ -182,11 +182,12 @@ function doStop() {
 /* --- kitöltés --- */
 function buildWriting(m) {
   flushed = false; locked = false;
-  const rounded = S.rawLetter && S.rawLetter !== S.letter
+  const rounded = S.rawLetter && !S.letters.includes(S.rawLetter)
     ? `<div class="note">A(z) <b>${esc(S.rawLetter)}</b> betűnél állt meg, ${S.invalid.includes(S.rawLetter) ? 'azzal nem kezdődik magyar szó' : 'az már volt'}, ezért a legközelebbi: <b>${esc(S.letter)}</b></div>` : '';
+  const pair = S.letters.length > 1 ? `<div class="muted small">Bármelyik jó: ${S.letters.map(esc).join(', ')}</div>` : '';
   m.innerHTML = `<div class="letterbar">
-      <div class="big-letter pop">${esc(S.letter)}</div>
-      <div><div class="lb-title">Minden szó <b>${esc(S.letter)}</b> betűvel kezdődjön!</div>
+      <div class="big-letter pop${bigCls(S.letter)}">${esc(S.letter)}</div>
+      <div><div class="lb-title">Minden szó <b>${esc(lettersOr(S))}</b> betűvel kezdődjön!</div>${pair}
       <div class="muted small">${S.round}. kör · sorsolta: ${esc(nameOf(S.drawerId))}</div>${rounded}</div>
     </div>
     <div id="wtimer" class="sticky-timer"></div>
@@ -220,10 +221,10 @@ function buildWriting(m) {
 function hint(inp) {
   const f = inp.closest('.field');
   const v = inp.value.trim();
-  const ok = startsOk(v, S.letter, S.alphabetMode);
+  const ok = startsOk(v, S.letters, S.alphabetMode);
   f.classList.toggle('good', !!v && ok);
   f.classList.toggle('bad', !!v && !ok);
-  f.querySelector('.hint').textContent = v && !ok ? `Nem ${S.letter} betűvel kezdődik` : '';
+  f.querySelector('.hint').textContent = v && !ok ? `Nem ${lettersOr(S)} betűvel kezdődik` : '';
 }
 function formValues() {
   const vals = {};
@@ -309,7 +310,7 @@ function reviewHtml() {
   const pts = [...S.players].sort((a, b) => b.roundPts - a.roundPts).map(p =>
     `<li><span>${esc(p.name)}</span><b>+${p.roundPts}</b><small>össz.: ${p.score + p.roundPts}</small></li>`).join('');
 
-  return `<div class="review-head"><span class="big-letter sm">${esc(S.letter)}</span>
+  return `<div class="review-head"><span class="big-letter sm${bigCls(S.letter)}">${esc(S.letter)}</span>
       <div><b>${S.round}. kör – kiértékelés</b><div class="muted small">Koppints egy szóra: ✗ ha rossz vagy ugyanaz, ✓ ha mégis jó.
       Ha valaki a te szavadat húzná ki, neked kell jóváhagynod.</div></div></div>
     ${banner}${cards}
@@ -389,7 +390,7 @@ function menuHtml() {
     <label class="row">Körök száma
       ${sel('maxRounds', S.maxRounds, [[0, 'Végtelen'], [3, '3 kör'], [5, '5 kör'], [7, '7 kör'], [10, '10 kör'], [15, '15 kör'], [20, '20 kör']])}</label>
     <label class="row">Betűk
-      ${sel('alphabetMode', S.alphabetMode, [['simple', 'Egyszerű ABC (A–Z)'], ['full', 'Teljes magyar (Á, CS, GY, SZ…)']])}</label>
+      ${sel('alphabetMode', S.alphabetMode, [['full', 'Teljes magyar, párokkal (T/TY, S/SZ…)'], ['simple', 'Egyszerű ABC (A–Z)']])}</label>
     <label class="row">⏱️ Időkorlát
       ${sel('timeLimit', S.timeLimit, [[0, 'Nincs'], [60, '1 perc'], [90, '1,5 perc'], [120, '2 perc'], [180, '3 perc'], [240, '4 perc'], [300, '5 perc']])}</label>
     <p class="muted small sm-note">Az időkorlát a következő körtől érvényes.</p>
@@ -448,7 +449,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('change', e => {
   const s = e.target.closest('[data-set]');
-  if (s) A('settings', { [s.dataset.set]: s.value });
+  if (s) A('settings', { [s.dataset.set]: s.value }).then(j => { if (j.error) renderOverlay(); });
 });
 
 connect();

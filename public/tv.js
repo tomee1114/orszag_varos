@@ -51,9 +51,12 @@ setInterval(tvTick, 200);
 function paint(i) {
   const cur = document.getElementById('sp-cur');
   if (!cur) return;
-  const Ab = S.alphabet, n = Ab.length;
-  const set = (el, l) => { el.textContent = l; el.classList.remove('bad', 'used'); const c = letterClass(S, l); if (c) el.classList.add(c); };
-  set(cur, Ab[i % n]); set(document.getElementById('sp-prev'), Ab[(i - 1 + n) % n]); set(document.getElementById('sp-next'), Ab[(i + 1) % n]);
+  const pool = ['A','CS','É','GY','K','NY','Ó','P','SZ','TY','Ü','ZS','✦','?','●','◆'];
+  const pick = () => pool[Math.floor(Math.random() * pool.length)];
+  const set = (el, v) => { el.textContent = v; el.classList.remove('bad', 'used'); };
+  set(cur, pick()); set(document.getElementById('sp-prev'), pick()); set(document.getElementById('sp-next'), pick());
+  const box = document.querySelector('.spinbox');
+  if (box) box.dataset.fx = String(Math.floor(i / 7) % 3);
 }
 
 function scoreHtml() {
@@ -82,7 +85,7 @@ function writingHtml() {
     return `<div class="bar ${p.done ? 'done' : ''}"><span class="bn">${esc(p.name)}</span>
       <span class="bt"><span style="width:${pct}%"></span></span><span class="bs">${p.done ? '✅ Kész' : p.filled + '/' + S.cats.length}</span></div>`;
   }).join('');
-  return `<div class="tv-letter-wrap"><div class="big-letter tvbig pop">${esc(S.letter)}</div>
+  return `<div class="tv-letter-wrap"><div class="big-letter tvbig pop${bigCls(S.letter)}">${esc(S.letter)}</div>
     <div class="tv-info">${S.round}. kör · sorsolta: <b>${esc(nameOf(S.drawerId))}</b></div>
     <div id="tvtimer" class="tvtimer"></div></div>
     <div class="bars">${bars}</div>`;
@@ -90,7 +93,7 @@ function writingHtml() {
 
 function reviewHtml() {
   const rows = S.players.map(p => ({ id: p.id, name: p.name, answers: S.answers[p.id] || {}, marks: S.marks[p.id] || {}, pts: p.roundPts }));
-  return `<div class="tv-round">${S.round}. kör – <span class="big-letter sm">${esc(S.letter)}</span> – kiértékelés</div>` + roundTable(rows, S.cats, false);
+  return `<div class="tv-round">${S.round}. kör – <span class="big-letter sm${bigCls(S.letter)}">${esc(S.letter)}</span> – kiértékelés</div>` + roundTable(rows, S.cats, false);
 }
 
 function roundTable(rows, cats, compact) {

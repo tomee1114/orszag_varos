@@ -9,10 +9,7 @@ function esc(s) {
 function norm(s) {
   return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
-function startsOk(text, letter, mode) {
-  const t = String(text || '').trim().toLowerCase();
-  if (!t || !letter) return false;
-  if (mode !== 'full') return norm(t).startsWith(norm(letter));
+function startsExact(t, letter) {
   const L = letter.toLowerCase();
   if (!t.startsWith(L)) return false;
   for (const other of FULL_ABC) {
@@ -21,6 +18,16 @@ function startsOk(text, letter, mode) {
   }
   return true;
 }
+/* letters: elfogadott kezdőbetűk tömbje, pl. ["T","TY"] */
+function startsOk(text, letters, mode) {
+  const t = String(text || '').trim().toLowerCase();
+  if (!t || !letters || !letters.length) return false;
+  if (mode !== 'full') return letters.some(l => norm(t).startsWith(norm(l)));
+  return letters.some(l => startsExact(t, l));
+}
+function lettersOr(S) { return (S.letters && S.letters.length ? S.letters : [S.letter]).join(' vagy '); }
+/* hosszú felirat (pl. "D / DZ / DZS") kisebb betűmérettel */
+function bigCls(l) { const n = String(l || '').length; return n > 7 ? ' multi2' : n > 3 ? ' multi' : ''; }
 function getId() {
   let id = LS.getItem('ov_id');
   if (!id) {

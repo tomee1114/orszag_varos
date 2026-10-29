@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Ország-Város telepítő / frissítő Debian/Ubuntu LXC-hez (rootként futtasd)
 #   Telepítés:  bash install.sh            -> a legfrissebb (main) verzió
-#               bash install.sh v2.0.0     -> adott verzió (git tag)
+#               bash install.sh v2.1.0     -> adott verzió (git tag)
 #   Frissítés / visszaállás: ugyanez, másik verziószámmal
-#   Port:       PORT=8080 bash install.sh v2.0.0   (alap: 80)
+#   Port:       PORT=8080 bash install.sh v2.1.0   (alap: 80)
 set -euo pipefail
 
 REPO="${REPO:-https://github.com/tomee1114/orszag_varos.git}"
@@ -32,7 +32,7 @@ fi
 if git -C "$DIR" show-ref --verify --quiet "refs/remotes/origin/$VERSION"; then
   git -C "$DIR" checkout --quiet --force -B "$VERSION" "origin/$VERSION"   # ág (pl. main)
 else
-  git -C "$DIR" -c advice.detachedHead=false checkout --quiet --force "$VERSION"  # tag (pl. v2.0.0)
+  git -C "$DIR" -c advice.detachedHead=false checkout --quiet --force "$VERSION"  # tag (pl. v2.1.0)
 fi
 CURRENT="$(git -C "$DIR" describe --tags --always)"
 

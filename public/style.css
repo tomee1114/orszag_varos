@@ -51,7 +51,7 @@ body.player #app { max-width: 760px; margin: 0 auto; padding-bottom: 3rem; }
 .tb-mid { display: flex; align-items: center; gap: .4rem; font-weight: 600; }
 .tb-right { display: flex; align-items: center; gap: .6rem; }
 .me { font-size: .9rem; }
-.mini-letter { background: #fff; color: var(--pri); border-radius: 8px; padding: 0 .5rem; font-weight: 900; font-size: 1.2rem; }
+.mini-letter { background: #fff; color: var(--pri); border-radius: 8px; padding: 0 .5rem; font-weight: 900; font-size: 1.2rem; white-space: nowrap; }
 #main { padding: .9rem; }
 .card { background: var(--card); border-radius: var(--radius); padding: 1rem; margin: .8rem 0; box-shadow: var(--shadow); line-height: 1.6; }
 .url { font-family: ui-monospace, Consolas, monospace; font-size: 1.15rem; background: #efeaff; padding: .6rem .8rem; border-radius: 10px; word-break: break-all; font-weight: 700; color: var(--pri); }
@@ -94,8 +94,13 @@ body.player #app { max-width: 760px; margin: 0 auto; padding-bottom: 3rem; }
 .big-letter {
   flex: none; min-width: 5rem; height: 5rem; padding: 0 .6rem; border-radius: 18px; background: linear-gradient(135deg, #ff8a3d, #ff5e7e);
   color: #fff; font-size: 3.4rem; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow);
+  white-space: nowrap;
 }
+.big-letter.multi { font-size: 2.2rem; }
+.big-letter.multi2 { font-size: 1.45rem; }
 .big-letter.sm { min-width: 2.6rem; height: 2.6rem; font-size: 1.6rem; border-radius: 10px; display: inline-flex; vertical-align: middle; }
+.big-letter.sm.multi { font-size: 1.15rem; }
+.big-letter.sm.multi2 { font-size: .85rem; }
 .pop { animation: pop .6s cubic-bezier(.2, 1.6, .4, 1); }
 @keyframes pop { from { transform: scale(.2) rotate(-20deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
 .lb-title { font-size: 1.15rem; }
@@ -207,7 +212,9 @@ body.tv .muted { color: #b5abd8; }
 .tvspin .sp.main { width: 18vw; height: 18vw; font-size: 12vw; border-radius: 3vw; }
 .tvspin .sp.side { width: 8vw; height: 8vw; font-size: 5vw; border-radius: 2vw; background: rgba(255,255,255,.12); color: #fff; }
 .tv-letter-wrap { display: flex; flex-direction: column; align-items: center; }
-.big-letter.tvbig { min-width: 20vw; height: 20vw; font-size: 14vw; border-radius: 3vw; }
+.big-letter.tvbig { min-width: 20vw; height: 20vw; font-size: 14vw; border-radius: 3vw; padding: 0 2vw; }
+.big-letter.tvbig.multi { font-size: 9vw; }
+.big-letter.tvbig.multi2 { font-size: 5.5vw; }
 .tvtimer .timer { font-size: 1.8vw; padding: .6vw 2vw; border-radius: 1.2vw; color: var(--ink); }
 .tvtimer .timer .tv { font-size: 4vw; }
 .bars { width: 100%; max-width: 60vw; margin-top: 2vw; }
@@ -229,3 +236,31 @@ body.tv .muted { color: #b5abd8; }
 .tvranks .rank { font-size: 2.4vw; color: var(--ink); padding: 1.2vw 2vw; }
 .tvranks .rank .medal { font-size: 3vw; width: 4vw; }
 .tvranks .rank.r1 { font-size: 3vw; }
+
+/* keskeny telefonon a cím helyett a betűpár és a kör látszik */
+@media (max-width: 480px) {
+  .tb-left { display: none; }
+  .tb-mid span:last-child { white-space: nowrap; }
+  .me { white-space: nowrap; }
+}
+
+/* Titkos sorsolás: az animáció szándékosan nem követi az ábécé valódi sorrendjét */
+.spinbox { position: relative; transition: filter .35s, transform .35s; }
+.spinbox::before, .spinbox::after {
+  content: ""; position: absolute; inset: 50% auto auto 50%; width: 12rem; height: 12rem;
+  border: 3px dashed rgba(125,92,240,.35); border-radius: 50%; pointer-events: none;
+  transform: translate(-50%,-50%); animation: orbit 2.4s linear infinite; z-index: -1;
+}
+.spinbox::after { width: 15rem; height: 15rem; border-style: dotted; animation-direction: reverse; animation-duration: 3.1s; }
+.spinbox[data-fx="1"] { filter: hue-rotate(70deg); transform: scale(1.03) rotate(-1deg); }
+.spinbox[data-fx="2"] { filter: hue-rotate(190deg); transform: scale(.98) rotate(1deg); }
+.spinbox[data-fx="1"] .sp.main { animation: wobble .45s ease-in-out infinite alternate; }
+.spinbox[data-fx="2"] .sp.side { animation: floaty .6s ease-in-out infinite alternate; }
+.abc .mystery { opacity: 1; text-decoration: none; background: linear-gradient(90deg,#efeaff,#fff3d6,#efeaff); padding: .55rem 1rem; }
+.tv .spinbox::before { width: 24vw; height: 24vw; border-width: .3vw; }
+.tv .spinbox::after { width: 30vw; height: 30vw; }
+.tv .tvspin[data-fx="1"] { transform: scale(1.08) rotate(-2deg); }
+.tv .tvspin[data-fx="2"] { transform: scale(.96) rotate(2deg); }
+@keyframes orbit { to { transform: translate(-50%,-50%) rotate(360deg); } }
+@keyframes wobble { from { transform: rotate(-5deg) scale(.96); } to { transform: rotate(5deg) scale(1.05); } }
+@keyframes floaty { from { transform: translateY(-8px); } to { transform: translateY(8px); } }
