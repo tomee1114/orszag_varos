@@ -1,1 +1,1 @@
-{"name":"orszag-varos","version":"2.2.6","private":true,"main":"server.js","scripts":{"start":"node server.js"},"engines":{"node":">=18"}}
+{"name":"orszag-varos","version":"2.2.7","private":true,"main":"server.js","scripts":{"start":"node server.js"},"engines":{"node":">=18"}}

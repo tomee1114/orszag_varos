@@ -27,3 +27,25 @@ body.tv{overflow:hidden!important}.tv #tv{grid-template-columns:minmax(210px,18.
 
 /* v2.2.6: TV játékoskezelő */
 .player-manager-button{display:block;width:100%;margin-top:1.1vw;background:#ffffff12;color:#fff;border:1px solid #ffffff20;padding:.62vw;border-radius:.75vw;font-size:.86vw}.player-manager-button:hover{background:#ffffff20}.player-manager-overlay{position:fixed;inset:0;z-index:150;background:#100a2788;backdrop-filter:blur(8px);display:none;place-items:center}.player-manager-overlay.open{display:grid}.player-manager-overlay>section{width:min(42vw,720px);max-height:82vh;overflow:auto;background:linear-gradient(145deg,#35266e,#211747);border:1px solid #ffffff29;border-radius:1.35vw;padding:1.25vw;box-shadow:0 2vw 6vw #0009;animation:pop .25s ease}.player-manager-overlay header{position:static;background:transparent;box-shadow:none;padding:0 0 .7vw;border-radius:0}.player-manager-overlay header div{flex:1}.player-manager-overlay header small{color:#bfb4e1;text-transform:uppercase;letter-spacing:.12em}.player-manager-overlay header h2{margin:.15vw 0;font-size:2vw}.player-manager-overlay header button{background:#ffffff14;color:#fff;font-size:1.15vw}.player-manager-overlay>section>p{color:#cfc6e8;font-size:.85vw}.manager-player{display:flex;align-items:center;gap:1vw;background:#ffffff0d;border:1px solid #ffffff18;padding:.72vw;margin:.5vw 0;border-radius:.8vw}.manager-player.offline{opacity:.6}.manager-player>div{flex:1}.manager-player b{display:block;font-size:1.15vw}.manager-player small{display:block;color:#cfc6e8;font-size:.75vw}.manager-player button{background:#db4352;color:#fff;padding:.52vw .8vw;font-size:.82vw}
+
+/* v2.2.7 - valóban dinamikus kevés/sok játékos TV-nézet */
+/* 1-2 játékos: ne legyen hét üres, teljes magasságú torony. Két soros, széles kategóriakártyák. */
+body[data-players="few"] .category-review{grid-template-rows:auto minmax(0,1fr) auto;padding:clamp(12px,2vh,24px) clamp(14px,1.6vw,30px)!important}
+body[data-players="few"] .category-columns{grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;gap:clamp(8px,1.1vh,14px)!important;align-content:center!important}
+body[data-players="few"] .category-column{height:auto!important;min-height:0;align-self:stretch;border-radius:clamp(12px,1vw,18px)}
+body[data-players="few"] .category-column:nth-child(n+5){grid-column:span 1}
+body[data-players="few"] .category-column:nth-child(5){grid-column:1/2}body[data-players="few"] .category-column:nth-child(6){grid-column:2/3}body[data-players="few"] .category-column:nth-child(7){grid-column:3/4}
+body[data-players="few"] .category-column>header{padding:clamp(7px,1vh,12px)!important}
+body[data-players="few"] .category-column>header>span{font-size:clamp(1.15rem,2.5vh,1.8rem)!important}
+body[data-players="few"] .category-column header b{font-size:clamp(.85rem,1.8vh,1.2rem)!important}
+body[data-players="few"] .category-column header small{font-size:clamp(.55rem,1.05vh,.78rem)!important}
+body[data-players="few"] .category-answers{grid-template-rows:repeat(var(--tv-player-count),minmax(0,1fr))!important;gap:clamp(6px,.8vh,10px)!important;padding:clamp(6px,.8vh,10px)!important}
+body[data-players="few"] .category-answer{min-height:clamp(70px,11vh,125px)!important;padding:clamp(7px,1vh,12px)!important;display:flex;flex-direction:column;justify-content:center}
+body[data-players="few"] .answer-player{font-size:clamp(.62rem,1.25vh,.86rem)!important}
+body[data-players="few"] .answer-word{font-size:clamp(1rem,2.15vh,1.45rem)!important;line-height:1.15!important;margin:.18em 1.5em .12em 0!important}
+body[data-players="few"] .answer-reason{display:block!important;font-size:clamp(.55rem,1.1vh,.78rem)!important}
+body[data-players="few"] .answer-state{width:clamp(1.15rem,2.3vh,1.6rem)!important;height:clamp(1.15rem,2.3vh,1.6rem)!important;font-size:clamp(.62rem,1.2vh,.85rem)!important}
+/* 3-4 játékos: hét oszlop marad, de használható kártyamagassággal. */
+body[data-players="normal"] .category-answer{max-height:clamp(100px,15vh,155px)}
+/* A 8. üres hely a 2 soros few elrendezésben láthatatlan egyensúly: jobb oldalon hagy levegőt. */
+body[data-players="few"] .category-columns:after{content:"";grid-column:4/5;grid-row:2/3;border:1px dashed #ffffff10;border-radius:1vw;opacity:.25}
