@@ -15,3 +15,14 @@ Helyi hálózatos, többjátékos családi webjáték. Adatbázis és külső No
 
 ## LXC frissítés Git tagből
 `bash /opt/orszag-varos/install.sh v2.4.0-alpha1`
+
+## v2.4.0-alpha2.3
+
+- Több, egymástól elkülönített játékszoba
+- Véletlenszerű, kattintható szobanevek
+- Négyjegyű belépési PIN
+- Belépés után is látható szobanév és PIN
+- Meghívó másolása gomb
+- Egy szobához külön Node.js játékfolyamat
+- Legfeljebb 10 egyidejű aktív szoba
+- Két óra inaktivitás után automatikus szobatörlés
