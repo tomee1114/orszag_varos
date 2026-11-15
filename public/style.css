@@ -49,3 +49,6 @@ body[data-players="few"] .answer-state{width:clamp(1.15rem,2.3vh,1.6rem)!importa
 body[data-players="normal"] .category-answer{max-height:clamp(100px,15vh,155px)}
 /* A 8. üres hely a 2 soros few elrendezésben láthatatlan egyensúly: jobb oldalon hagy levegőt. */
 body[data-players="few"] .category-columns:after{content:"";grid-column:4/5;grid-row:2/3;border:1px dashed #ffffff10;border-radius:1vw;opacity:.25}
+
+/* v2.4.0-alpha3 teszt: csak reszponziv koreredmeny */
+.review-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:18px;align-items:start;width:min(1500px,100%);margin:0 auto 20px}.review-grid>.card{margin:0;min-width:0;height:auto}.review-grid .words{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px}.review-grid .word,.review-grid .empty{min-width:0;overflow-wrap:anywhere}@media(max-width:719px){.review-grid{grid-template-columns:1fr;gap:12px}}
