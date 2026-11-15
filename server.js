@@ -6,7 +6,7 @@ const KEYS=CATS.map(x=>x.key), GROUPS=[['A','Á'],['B'],['C','CS'],['D','DZ','DZ
 const players=new Map(), clients=new Set();
 const empty=()=>Object.fromEntries(KEYS.map(k=>[k,'']));
 const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/\s+/g,' ');
-function state(old={}){return{phase:'lobby',round:0,maxRounds:old.maxRounds||0,timeLimit:old.timeLimit||0,endRule:old.endRule||'all',grace:old.grace||10,sound:old.sound!==false,reduced:!!old.reduced,used:[],letters:[],label:'',drawer:null,lastDrawer:null,endsAt:null,endReason:null,marks:{},reviewSeen:{},history:[],show:null,version:'2.2.7'}}
+function state(old={}){return{phase:'lobby',round:0,maxRounds:old.maxRounds||0,timeLimit:old.timeLimit||0,endRule:old.endRule||'all',grace:old.grace||10,sound:old.sound!==false,reduced:!!old.reduced,used:[],letters:[],label:'',drawer:null,lastDrawer:null,endsAt:null,endReason:null,marks:{},reviewSeen:{},history:[],show:null,version:'2.4.1'}}
 let g=state();
 function online(id){return[...clients].some(c=>!c.tv&&c.id===id)}
 function active(){let a=[...players.values()].filter(p=>online(p.id)||p.offline&&Date.now()-p.offline<60000);return a.length?a:[...players.values()]}
@@ -42,4 +42,4 @@ const server=http.createServer((req,res)=>{if(req.method==='GET'&&req.url==='/__
 setInterval(()=>{if(g.phase==='writing'){doneCheck();if(g.endsAt&&Date.now()>g.endsAt+1000)review();broadcast()}if(g.phase==='roundshow'&&g.show&&Date.now()>g.show.until){if(g.maxRounds&&g.round>=g.maxRounds)g.phase='final';else begin();broadcast()}},500);
 function cleanupOfflinePlayers(){let changed=false;for(const [id,p] of players){if(!online(id)&&p.offline&&Date.now()-p.offline>60000){players.delete(id);if(g.reviewSeen)delete g.reviewSeen[id];changed=true}}if(changed){doneCheck();broadcast()}}
 setInterval(cleanupOfflinePlayers,5000);
-server.listen(PORT,'0.0.0.0',()=>{console.log('Ország-Város v2.2.7');for(const a of Object.values(os.networkInterfaces()).flat())if(a?.family==='IPv4'&&!a.internal)console.log(`http://${a.address}:${PORT}/  TV: /tv`)})
+server.listen(PORT,'0.0.0.0',()=>{console.log('Ország-Város v2.4.1');for(const a of Object.values(os.networkInterfaces()).flat())if(a?.family==='IPv4'&&!a.internal)console.log(`http://${a.address}:${PORT}/  TV: /tv`)})

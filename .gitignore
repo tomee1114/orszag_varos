@@ -1,3 +1,10 @@
 node_modules/
 *.log
 .DS_Store
+
+# helyi mentesek es egyszeri frissito scriptek
+*.bak*
+*.backup*
+frissites-*.sh
+javitas-*.sh
+node_modules/
