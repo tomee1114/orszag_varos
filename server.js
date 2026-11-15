@@ -1,7 +1,7 @@
 'use strict';
 const http=require('http'),fs=require('fs'),path=require('path'),os=require('os'),crypto=require('crypto');
 const PORT=+(process.env.PORT||3000), PUB=path.join(__dirname,'public');
-const CATS=[['orszag','Ország','🌍'],['varos','Város','🏙️'],['fiu','Fiú','👦'],['lany','Lány','👧'],['noveny','Növény','🌱'],['allat','Állat','🐾'],['targy','Tárgy','🧸']].map(([key,label,icon])=>({key,label,icon}));
+const DEFAULT_CATS=[['orszag','Ország','🌍'],['varos','Város','🏙️'],['fiu','Fiú','👦'],['lany','Lány','👧'],['noveny','Növény','🌱'],['allat','Állat','🐾'],['targy','Tárgy','🧸']].map(([key,label,icon])=>({key,label,icon}));const CATS=(()=>{try{let a=JSON.parse(process.env.OV_CATEGORIES||'[]');if(Array.isArray(a)){a=a.map(c=>({key:String(c.key||'').replace(/[^a-z0-9_]/g,'').slice(0,24),label:String(c.label||'').replace(/[<>"'`&]/g,'').trim().slice(0,30),icon:String(c.icon||'✨').slice(0,4)})).filter(c=>c.key&&c.label);if(a.length>=3&&a.length<=8&&new Set(a.map(c=>c.key)).size===a.length)return a}}catch(e){}return DEFAULT_CATS})();
 const KEYS=CATS.map(x=>x.key), GROUPS=[['A','Á'],['B'],['C','CS'],['D','DZ','DZS'],['E','É'],['F'],['G','GY'],['H'],['I','Í'],['J'],['K'],['L','LY'],['M'],['N','NY'],['O','Ó'],['Ö','Ő'],['P'],['R'],['S','SZ'],['T','TY'],['U','Ú'],['Ü','Ű'],['V'],['Z','ZS']];
 const players=new Map(), clients=new Set();
 const empty=()=>Object.fromEntries(KEYS.map(k=>[k,'']));
